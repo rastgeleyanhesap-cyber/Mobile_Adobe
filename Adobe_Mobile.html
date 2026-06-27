@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>An Mobile Pro - Functional Edition</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Üst Kontrol Barı */
+        .top-bar {
+            height: 50px;
+            background-color: #262626;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            border-bottom: 2px solid #333;
+            z-index: 20;
+        }
+
+        .top-left, .top-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .project-title {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        /* Ana Alan */
+        .main-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #111;
+        }
+
+        /* Çizim Tuvali Alanı */
+        .canvas-container {
+            width: 90vw;
+            height: calc(90vw * 9 / 16);
+            background-color: #ffffff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .stage-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .stage-canvas.active {
+            display: block;
+            z-index: 5;
+        }
+
+        /* Sol Araç Çubuğu */
+        .toolbar {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(38, 38, 38, 0.95);
+            border-radius: 25px;
+            padding: 10px 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 15;
+        }
+
+        .tool-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: none;
+            background: none;
+            color: white;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .tool-btn.active {
+            background-color: #ff5722;
+        }
+
+        /* Alt/Üst Ayar Paneli (Fırça Özellikleri İçin) */
+        .brush-settings {
+            position: absolute;
+            left: 75px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(38, 38, 38, 0.95);
+            padding: 12px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 14;
+        }
+
+        .setting-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 11px;
+            color: #ccc;
+        }
+
+        .setting-row input, .setting-row select {
+            background: #222;
+            color: white;
+            border: 1px solid #444;
+            padding: 3px;
+            border-radius: 4px;
+        }
+
+        /* Sağ Katman Yönetimi */
+        .layer-panel-toggle {
+            position: absolute;
+            right: 15px;
+            bottom: 110px;
+            background-color: #ff5722;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            z-index: 15;
+            cursor: pointer;
+        }
+
+        .layer-manager {
+            position: absolute;
+            right: 15px;
+            bottom: 170px;
+            width: 180px;
+            max-height: 220px;
+            background-color: rgba(38, 38, 38, 0.95);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 15;
+            overflow-y: auto;
+        }
+
+        .layer-item {
+            background-color: #333;
+            padding: 8px 10px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        .layer-item.active {
+            border-color: #ff5722;
+            background-color: #444;
+        }
+
+        .add-layer-btn {
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            padding: 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        /* Alt Zaman Çizelgesi */
+        .timeline-bar {
+            height: 90px;
+            background-color: #262626;
+            border-top: 2px solid #333;
+            display: flex;
+            flex-direction: column;
+            padding: 5px 10px;
+            gap: 5px;
+            z-index: 20;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .frames-scroll {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .frame-thumb {
+            min-width: 70px;
+            height: 45px;
+            background-color: #444;
+            border-radius: 6px;
+            border: 2px solid #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .frame-thumb.active {
+            border-color: #ff5722;
+            background-color: #555;
+        }
+
+        .add-frame-thumb {
+            min-width: 45px;
+            height: 45px;
+            background-color: #333;
+            border: 2px dashed #666;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="top-left">
+            <button class="btn">🔙</button>
+            <span class="project-title">Proje_1</span>
+        </div>
+        <div class="top-right">
+            <button class="btn" id="clearCanvas" title="Temizle">🗑️</button>
+            <button class="btn" title="Oynat">▶️</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="toolbar">
+            <button class="tool-btn active" id="tool-brush" data-tool="brush">🖌️</button>
+            <button class="tool-btn" id="tool-eraser" data-tool="eraser">🧽</button>
+        </div>
+
+        <div class="brush-settings">
+            <div class="setting-row" id="brush-type-row">
+                <label>Fırça Türü:</label>
+                <select id="brushType">
+                    <option value="pencil">✏️ Kurşun Kalem</option>
+                    <option value="marker">🖊️ Keçeli Kalem</option>
+                    <option value="airbrush">💨 Hava Fırçası</option>
+                    <option value="pixel">👾 Piksel</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <label>Boyut (<span id="sizeVal">5</span>px):</label>
+                <input type="range" id="brushSize" min="1" max="50" value="5">
+            </div>
+            <div class="setting-row">
+                <label>Şeffaflık (<span id="opacityVal">100</span>%):</label>
+                <input type="range" id="brushOpacity" min="1" max="100" value="100">
+            </div>
+            <div class="setting-row" id="color-row">
+                <label>Renk:</label>
+                <input type="color" id="brushColor" value="#000000">
+            </div>
+        </div>
+
+        <div class="canvas-container" id="canvasContainer">
+            </div>
+
+        <div class="layer-panel-toggle" id="layerToggle">🥞</div>
+
+        <div class="layer-manager" id="layerManager">
+            <button class="add-layer-btn" id="addLayerBtn">+ Katman Ekle</button>
+            <div id="layerList"></div>
+        </div>
+    </div>
+
+    <div class="timeline-bar">
+        <div class="timeline-header">
+            <span>Kareler (Frames)</span>
+            <span id="frameIndicator">1 / 1</span>
+        </div>
+        <div class="frames-scroll" id="frameList">
+            </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('canvasContainer');
+        const layerList = document.getElementById('layerList');
+        const frameList = document.getElementById('frameList');
+        
+        let currentFrame = 1;
+        let activeLayerId = null;
+        let isDrawing = false;
+
+        // Çizim Ayarları Verisi
+        let settings = {
+            tool: 'brush',
+            type: 'pencil',
+            size: 5,
+            opacity: 1,
+            color: '#000000'
+        };
+
+        // Proje Hafızası (Kareler ve Katmanlar)
+        // Yapı: { frameId: { layerId: canvasData } }
+        let animationData = {
+            1: { layers: ['frame1_layer1'], activeLayer: 'frame1_layer1' }
+        };
+
+        // Tuval Boyutlarını Ayarla (16:9 Oranında İç Çözünürlük)
+        const canvasWidth = 850;
+        const canvasHeight = 480;
+
+        function initProject() {
+            createCanvasElement(1, 'frame1_layer1');
+            renderLayers();
+            renderFrames();
+        }
+
+        function createCanvasElement(frameId, layerId) {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            canvas.className = `stage-canvas f-${frameId}`;
+            canvas.id = layerId;
+            
+            // Beyaz arka plan verelim ilk katmana temiz görünsün
+            const ctx = canvas.getContext('2d');
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            container.appendChild(canvas);
+            setupDrawingEvents(canvas);
+        }
+
+        // Çizim Dinamikleri ve Fırça Türleri Motoru
+        function setupDrawingEvents(canvas) {
+            const ctx = canvas.getContext('2d');
+
+            function getCoords(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                // Ekrana basılan yeri canvas içi çözünürlüğe oranla
+                return {
+                    x: (clientX - rect.left) * (canvas.width / rect.width),
+                    y: (clientY - rect.top) * (canvas.height / rect.height)
+                };
+            }
+
+            function start(e) {
+                if (canvas.id !== activeLayerId) return;
+                isDrawing = true;
+                ctx.beginPath();
+                const coords = getCoords(e);
+                ctx.moveTo(coords.x, coords.y);
+            }
+
+            function draw(e) {
+                if (!isDrawing || canvas.id !== activeLayerId) return;
+                e.preventDefault();
+                const coords = getCoords(e);
+
+                ctx.globalAlpha = settings.opacity;
+
+                if (settings.tool === 'eraser') {
+                    // SİLME MODU: Şeffaflık ayarına göre siler
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.lineWidth = settings.size;
+                    ctx.strokeStyle = `rgba(0,0,0,${settings.opacity})`;
+                } else {
+                    // ÇİZİM MODU
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = settings.color;
+                    ctx.lineWidth = settings.size;
+
+                    // Fırça Türü Ayarları
+                    if (settings.type === 'pencil') {
+                        ctx.shadowBlur = 0;
+                    } else if (settings.type === 'marker') {
+                        ctx.shadowBlur = 1;
+                        ctx.shadowColor = settings.color;
+                    } else if (settings.type === 'airbrush') {
+                        ctx.shadowBlur = settings.size / 2;
+                        ctx.shadowColor = settings.color;
+                    } else if (settings.type === 'pixel') {
+                        ctx.shadowBlur = 0;
+                        // Kare keskin hatlar için yuvarlamayı kapat
+                        ctx.lineCap = 'square';
+                    }
+                }
+
+                ctx.lineTo(coords.x, coords.y);
+                ctx.stroke();
+            }
+
+            function stop() {
+                isDrawing = false;
+                ctx.lineCap = 'round'; // pixel harici için defaulta çek
+            }
+
+            // Fare Olayları
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('mousemove', draw);
+            window.addEventListener('mouseup', stop);
+
+            // Mobil Dokunmatik Ekran Olayları
+            canvas.addEventListener('touchstart', start);
+            canvas.addEventListener('touchmove', draw, { passive: false });
+            window.addEventListener('touchend', stop);
+        }
+
+        // Katmanları Ekrana Çizdirme
+        function renderLayers() {
+            layerList.innerHTML = '';
+            const currentLayers = animationData[currentFrame].layers;
+            activeLayerId = animationData[currentFrame].activeLayer;
+
+            // Ters döngü kuruyoruz ki üstteki katman listede de en üstte dursun
+            for (let i = currentLayers.length - 1; i >= 0; i--) {
+                const lId = currentLayers[i];
+                const item = document.createElement('div');
+                item.className = `layer-item ${lId === activeLayerId ? 'active' : ''}`;
+                item.innerHTML = `<span>Katman ${i + 1}</span> <span>👁️</span>`;
+                
+                item.addEventListener('click', () => {
+                    animationData[currentFrame].activeLayer = lId;
+                    switchLayerAndFrameVisuals();
+                });
+                layerList.appendChild(item);
+            }
+        }
+
+        // Kareleri (Frames) Ekrana Çizdirme
+        function renderFrames() {
+            frameList.innerHTML = '';
+            Object.keys(animationData).forEach(fId => {
+                const thumb = document.createElement('div');
+                thumb.className = `frame-thumb ${Number(fId) === currentFrame ? 'active' : ''}`;
+                thumb.innerText = fId;
+                thumb.addEventListener('click', () => {
+                    currentFrame = Number(fId);
+                    switchLayerAndFrameVisuals();
+                });
+                frameList.appendChild(thumb);
+            });
+
+            // Kare Ekleme Butonu (+)
+            const addBtn = document.createElement('div');
+            addBtn.className = 'add-frame-thumb';
+            addBtn.innerText = '+';
+            addBtn.style.minWidth = '45px';
+            addBtn.addEventListener('click', addNewFrame);
+            frameList.appendChild(addBtn);
+
+            document.getElementById('frameIndicator').innerText = `${currentFrame} / ${Object.keys(animationData).length}`;
+        }
+
+        function switchLayerAndFrameVisuals() {
+            // Tüm canvasları gizle
+            document.querySelectorAll('.stage-canvas').forEach(c => c.classList.remove('active'));
+            
+            // Mevcut kareye ait tüm katmanları aktif yap (üst üste görünmesi için)
+            const currentLayers = animationData[currentFrame].layers;
+            currentLayers.forEach(lId => {
+                document.getElementById(lId).classList.add('active');
+            });
+
+            activeLayerId = animationData[currentFrame].activeLayer;
+            renderLayers();
+            renderFrames();
+        }
+
+        // SINIRSIZ KATMAN EKLEME FONKSİYONU
+        document.getElementById('addLayerBtn').addEventListener('click', () => {
+            const nextLayerIndex = animationData[currentFrame].layers.length + 1;
+            const newLayerId = `frame${currentFrame}_layer${Date.now()}`;
+            
+            animationData[currentFrame].layers.push(newLayerId);
+            animationData[currentFrame].activeLayer = newLayerId;
+
+            createCanvasElement(currentFrame, newLayerId);
+            switchLayerAndFrameVisuals();
+        });
+
+        // KARE EKLEME FONKSİYONU
+        function addNewFrame() {
+            const nextFrameId = Object.keys(animationData).length + 1;
+            const firstLayerId = `frame${nextFrameId}_layer${Date.now()}`;
+            
+            animationData[nextFrameId] = {
+                layers: [firstLayerId],
+                activeLayer: firstLayerId
+            };
+
+            createCanvasElement(nextFrameId, firstLayerId);
+            currentFrame = nextFrameId;
+            switchLayerAndFrameVisuals();
+        }
+
+        // UI Event Listeners (Araç Seçimleri ve Sürgüler)
+        document.getElementById('tool-brush').addEventListener('click', (e) => {
+            setActiveTool('brush', e.currentTarget);
+            document.getElementById('brush-type-row').style.display = 'flex';
+            document.getElementById('color-row').style.display = 'flex';
+        });
+
+        document.getElementById('tool-eraser').addEventListener('click', (e) => {
+            setActiveTool('eraser', e.currentTarget);
+            document.getElementById('brush-type-row').style.display = 'none';
+            document.getElementById('color-row').style.display = 'none';
+        });
+
+        function setActiveTool(tool, element) {
+            settings.tool = tool;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        document.getElementById('brushType').addEventListener('change', (e) => settings.type = e.target.value);
+        document.getElementById('brushSize').addEventListener('input', (e) => {
+            settings.size = e.target.value;
+            document.getElementById('sizeVal').innerText = e.target.value;
+        });
+        document.getElementById('brushOpacity').addEventListener('input', (e) => {
+            settings.opacity = e.target.value / 100;
+            document.getElementById('opacityVal').innerText = e.target.value;
+        });
+        document.getElementById('brushColor').addEventListener('change', (e) => settings.color = e.target.value);
+        document.getElementById('clearCanvas').addEventListener('click', () => {
+            const canvas = document.getElementById(activeLayerId);
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        // Panel Aç/Kapat
+        document.getElementById('layerToggle').addEventListener('click', () => {
+            const lm = document.getElementById('layerManager');
+            lm.style.display = lm.style.display === 'none' ? 'flex' : 'none';
+        });
+
+        // Projeyi Başlat
+        initProject();
+    </script>
+</body>
+</html>
